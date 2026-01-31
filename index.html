@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Website</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-view" class="container">
+        <img src="logo.jpg" alt="Logo" class="logo-img-large">
+        <h1>Zway Clothing</h1>
+        <div class="card">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <p id="login-error" class="error"></p>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden by default) -->
+    <div id="app-view" style="display:none;">
+        <nav>
+            <div class="logo">
+                <img src="logo.jpg" alt="Logo" class="logo-img-small">
+                Zway Clothing
+            </div>
+            <div class="nav-links">
+                <button onclick="showTab('billing')">Billing</button>
+                <button onclick="showTab('products')" id="nav-products">Products</button>
+                <button onclick="showTab('reports')" id="nav-reports">Reports</button>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <div id="tab-billing" class="tab-content">
+            <div class="split-view">
+                <div class="product-selection">
+                    <h2>Select Product</h2>
+                    <div id="billing-product-list" class="grid-list"></div>
+                </div>
+                <div class="cart-section">
+                    <h2>Current Bill</h2>
+                    <div id="cart-items"></div>
+                    <div class="total-section">
+                        <h3>Total: ₹<span id="cart-total">0</span></h3>
+                        <button class="primary-btn" onclick="processSale()">Checkout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-products" class="tab-content" style="display:none;">
+            <h2>Product Inventory</h2>
+            <div class="card">
+                <h3>Add New Product</h3>
+                <input type="text" id="new-prod-name" placeholder="Name">
+                <select id="new-prod-cat">
+                    <option value="Shirts">Shirts</option>
+                    <option value="T-Shirts">T-Shirts</option>
+                    <option value="Shorts">Shorts</option>
+                    <option value="Track Pants">Track Pants</option>
+                    <option value="Pants">Pants</option>
+                </select>
+                <input type="number" id="new-prod-price" placeholder="Price">
+                <input type="number" id="new-prod-stock" placeholder="Stock">
+                <button onclick="addProduct()">Add Product</button>
+            </div>
+            <br>
+            <table id="products-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="products-list"></tbody>
+            </table>
+        </div>
+
+        <div id="tab-reports" class="tab-content" style="display:none;">
+            <h2>Daily Sales Report</h2>
+            <button onclick="loadDailyReport()">Refresh Report</button>
+            <button onclick="exportReport()">Export CSV</button>
+            <button style="background-color: #dc3545;" onclick="clearDailyReport()">Clear Today's Sales</button>
+            <div class="card">
+                <h3>Today's Total: ₹<span id="daily-total">0</span></h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Qty Sold</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Product</h2>
+            <input type="hidden" id="edit-prod-id">
+            <label>Name:</label>
+            <input type="text" id="edit-prod-name">
+            <label>Category:</label>
+            <select id="edit-prod-cat">
+                <option value="Shirts">Shirts</option>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Shorts">Shorts</option>
+                <option value="Track Pants">Track Pants</option>
+                <option value="Pants">Pants</option>
+            </select>
+            <label>Price:</label>
+            <input type="number" id="edit-prod-price">
+            <label>Stock:</label>
+            <input type="number" id="edit-prod-stock">
+            <button class="primary-btn" onclick="saveProductChanges()">Save Changes</button>
+        </div>
+    </div>
+
+    <div id="receipt-print-area" class="print-only">
+        <center>
+            <h2>Zway Clothing</h2>
+            <p>Date: <span id="receipt-date"></span></p>
+            <p>Bill No: <span id="receipt-id"></span></p>
+            <hr>
+        </center>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody id="receipt-items"></tbody>
+        </table>
+        <hr>
+        <h3 style="text-align: right;">Total: ₹<span id="receipt-total">0</span></h3>
+        <center>Thank you for shopping!</center>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
