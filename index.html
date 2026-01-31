@@ -34,6 +34,7 @@
                 <button onclick="showTab('billing')">Billing</button>
                 <button onclick="showTab('products')" id="nav-products">Products</button>
                 <button onclick="showTab('reports')" id="nav-reports">Reports</button>
+                <button onclick="openUserModal()" id="nav-users">Users</button>
                 <button onclick="logout()">Logout</button>
             </div>
         </nav>
@@ -152,6 +153,23 @@
         <hr>
         <h3 style="text-align: right;">Total: ₹<span id="receipt-total">0</span></h3>
         <center>Thank you for shopping!</center>
+    </div>
+
+    <center>Thank you for shopping!</center>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUserModal()">&times;</span>
+            <h2>Change Password</h2>
+            <select id="user-select">
+                <option value="owner">Owner</option>
+                <option value="staff">Staff</option>
+            </select>
+            <input type="password" id="new-password" placeholder="New Password">
+            <button class="primary-btn" onclick="changePassword()">Update Password</button>
+        </div>
     </div>
 
     <script src="script.js"></script>
