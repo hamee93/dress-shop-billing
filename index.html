@@ -106,6 +106,16 @@
                     <tbody id="report-list"></tbody>
                 </table>
             </div>
+
+            <hr style="margin: 20px 0;">
+
+            <div class="card">
+                <h3>Monthly Archive</h3>
+                <label>Select Month:</label>
+                <input type="month" id="month-picker">
+                <button onclick="loadMonthlyReport()">Get Monthly Report</button>
+                <div id="monthly-report-area" style="margin-top:10px;"></div>
+            </div>
         </div>
     </div>
 
