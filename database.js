@@ -46,6 +46,13 @@ function initDb() {
             FOREIGN KEY(product_id) REFERENCES products(id)
         )`);
 
+        // Daily Summaries Table (for Monthly Reports)
+        db.run(`CREATE TABLE IF NOT EXISTS daily_summaries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT UNIQUE,
+            total_sales REAL
+        )`);
+
         // Seed initial data if empty
         db.get("SELECT count(*) as count FROM users", (err, row) => {
             if (row.count === 0) {
