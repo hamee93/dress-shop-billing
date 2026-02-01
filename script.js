@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api;
+const API_URL = 'http://localhost:3000/api';
 let currentUser = null;
 let cart = [];
 let allProducts = [];
@@ -424,4 +424,3 @@ window.onclick = function (event) {
         document.getElementById('user-modal').style.display = 'none';
     }
 }
-
