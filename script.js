@@ -26,9 +26,11 @@ async function login() {
             if (currentUser.role === 'owner') {
                 document.getElementById('nav-products').style.display = 'inline-block';
                 document.getElementById('nav-reports').style.display = 'inline-block';
+                document.getElementById('nav-users').style.display = 'inline-block';
             } else {
                 document.getElementById('nav-products').style.display = 'none';
                 document.getElementById('nav-reports').style.display = 'none';
+                document.getElementById('nav-users').style.display = 'none';
             }
 
         } else {
@@ -323,6 +325,34 @@ async function clearDailyReport() {
     }
 }
 
+async function loadMonthlyReport() {
+    const month = document.getElementById('month-picker').value;
+    if (!month) return alert("Select a month");
+
+    try {
+        const res = await fetch(`${API_URL}/reports/monthly?month=${month}`);
+        const data = await res.json();
+
+        const container = document.getElementById('monthly-report-area');
+        if (data.length === 0) {
+            container.innerHTML = "<p>No archives found for this month.</p>";
+            return;
+        }
+
+        let html = "<table border='1' width='100%'><tr><th>Date</th><th>Total Sales</th></tr>";
+        let total = 0;
+        data.forEach(row => {
+            html += `<tr><td>${row.date}</td><td>₹${row.total_sales}</td></tr>`;
+            total += row.total_sales;
+        });
+        html += `<tr><td><strong>TOTAL</strong></td><td><strong>₹${total}</strong></td></tr></table>`;
+        container.innerHTML = html;
+
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
 function printReceipt(saleId, items, cashierName) {
     const date = new Date().toLocaleString();
     document.getElementById('receipt-date').innerText = date;
@@ -350,4 +380,47 @@ function printReceipt(saleId, items, cashierName) {
     document.getElementById('receipt-total').innerText = total;
 
     window.print();
+}
+
+// User Management
+function openUserModal() {
+    document.getElementById('user-modal').style.display = 'block';
+}
+
+function closeUserModal() {
+    document.getElementById('user-modal').style.display = 'none';
+}
+
+async function changePassword() {
+    const username = document.getElementById('user-select').value;
+    const newPassword = document.getElementById('new-password').value;
+
+    if (!newPassword) return alert('Enter a password');
+
+    // Security check
+    const ownerPass = prompt("Enter generic Owner Password to confirm action (admin123):");
+    if (ownerPass !== 'admin123') return alert('Incorrect Owner Password');
+
+    const res = await fetch(`${API_URL}/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, newPassword })
+    });
+
+    if (res.ok) {
+        alert('Password Changed Successfully');
+        closeUserModal();
+    } else {
+        alert('Error updating password');
+    }
+}
+
+// Close modals
+window.onclick = function (event) {
+    if (event.target == document.getElementById('edit-modal')) {
+        document.getElementById('edit-modal').style.display = 'none';
+    }
+    if (event.target == document.getElementById('user-modal')) {
+        document.getElementById('user-modal').style.display = 'none';
+    }
 }
