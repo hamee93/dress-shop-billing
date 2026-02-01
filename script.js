@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://697f47b1f5cf920008187ded--zway-clothing-billing.netlify.app/i';
 let currentUser = null;
 let cart = [];
 let allProducts = [];
@@ -424,3 +424,4 @@ window.onclick = function (event) {
         document.getElementById('user-modal').style.display = 'none';
     }
 }
+
