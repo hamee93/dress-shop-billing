@@ -1,4 +1,4 @@
-const API_URL = 'http://697f47b1f5cf920008187ded--zway-clothing-billing.netlify.app/i';
+const API_URL = 'http://localhost:3000/api;
 let currentUser = null;
 let cart = [];
 let allProducts = [];
