@@ -149,45 +149,100 @@ app.get('/api/reports/daily', (req, res) => {
     });
 });
 
+const fs = require('fs');
+
 app.delete('/api/reports/daily', (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
 
-        // Get sales IDs for today to delete related items
-        db.all("SELECT id FROM sales WHERE date = ?", [today], (err, rows) => {
-            if (err) {
-                db.run("ROLLBACK");
-                res.status(500).json({ error: err.message });
-                return;
+        // 1. Get total sales for today to archive in database
+        db.get("SELECT SUM(total_amount) as total FROM sales WHERE date = ?", [today], (err, row) => {
+            if (err || !row || !row.total) {
+                // proceed or handle empty
             }
 
-            if (rows.length === 0) {
-                db.run("COMMIT");
-                return res.json({ message: "No sales to clear" });
+            const totalSales = row ? row.total : 0;
+
+            if (totalSales > 0) {
+                // 2. Fetch detailed data for CSV archiving
+                const reportSql = `
+                    SELECT p.name, p.category, SUM(si.quantity) as qty, SUM(si.quantity * si.price_at_sale) as rev
+                    FROM sale_items si
+                    JOIN sales s ON s.id = si.sale_id
+                    JOIN products p ON p.id = si.product_id
+                    WHERE s.date = ?
+                    GROUP BY p.id
+                `;
+                db.all(reportSql, [today], (err, rows) => {
+                    if (!err && rows.length > 0) {
+                        // Create CSV Content
+                        let csvContent = "Product,Category,Qty Sold,Revenue\n";
+                        rows.forEach(r => {
+                            csvContent += `${r.name},${r.category},${r.qty},${r.rev}\n`;
+                        });
+                        csvContent += `\nTOTAL,,,${totalSales}`;
+
+                        // Save to file
+                        const filePath = path.join(__dirname, 'archived_reports', `report_${today}.csv`);
+                        fs.writeFile(filePath, csvContent, (err) => {
+                            if (err) console.error("Failed to archive file:", err);
+                        });
+                    }
+                });
+
+                // 3. Save to daily_summaries table
+                db.run("INSERT OR REPLACE INTO daily_summaries (date, total_sales) VALUES (?, ?)", [today, totalSales]);
             }
 
-            const saleIds = rows.map(row => row.id).join(',');
-
-            // Delete sale_items first (foreign key constraint)
-            db.run(`DELETE FROM sale_items WHERE sale_id IN (${saleIds})`, function (err) {
+            // 4. Proceed to Delete Actual Records
+            db.all("SELECT id FROM sales WHERE date = ?", [today], (err, rows) => {
                 if (err) {
                     db.run("ROLLBACK");
-                    return res.status(500).json({ error: err.message });
+                    res.status(500).json({ error: err.message });
+                    return;
                 }
 
-                // Delete sales
-                db.run("DELETE FROM sales WHERE date = ?", [today], function (err) {
+                if (rows.length === 0) {
+                    db.run("COMMIT");
+                    return res.json({ message: "No sales to clear" });
+                }
+
+                const saleIds = rows.map(row => row.id).join(',');
+
+                db.run(`DELETE FROM sale_items WHERE sale_id IN (${saleIds})`, function (err) {
                     if (err) {
                         db.run("ROLLBACK");
-                        return res.status(500).json({ error: err.message });
+                        res.status(500).json({ error: err.message });
+                        return;
                     }
-                    db.run("COMMIT");
-                    res.json({ message: "Daily report cleared" });
+
+                    db.run("DELETE FROM sales WHERE date = ?", [today], function (err) {
+                        if (err) {
+                            db.run("ROLLBACK");
+                            res.status(500).json({ error: err.message });
+                            return;
+                        }
+                        db.run("COMMIT");
+                        res.json({ message: "Daily report archived and sales cleared" });
+                    });
                 });
             });
         });
+    });
+});
+
+app.get('/api/reports/monthly', (req, res) => {
+    const { month } = req.query; // Format: 'YYYY-MM'
+    if (!month) return res.status(400).json({ error: "Month required" });
+
+    db.all("SELECT * FROM daily_summaries WHERE strftime('%Y-%m', date) = ?", [month], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
     });
 });
 
