@@ -32,8 +32,14 @@ function initDb() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT,
             total_amount REAL,
+            discount REAL DEFAULT 0,
             cashier_id INTEGER
         )`);
+
+        // Safely add discount column to existing database
+        db.run(`ALTER TABLE sales ADD COLUMN discount REAL DEFAULT 0`, (err) => {
+            // Ignore error if column already exists
+        });
 
         // Sale Items Table
         db.run(`CREATE TABLE IF NOT EXISTS sale_items (
@@ -59,7 +65,7 @@ function initDb() {
                 console.log("Seeding initial data...");
                 const stmt = db.prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
                 // Default owner login: owner/admin123 (In real app, hash passwords!)
-                stmt.run("owner", "zway123", "owner");
+                stmt.run("admin", "admin123", "owner");
                 // Default staff login: staff/staff123
                 stmt.run("staff", "staff123", "staff");
                 stmt.finalize();
