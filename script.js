@@ -3,6 +3,30 @@ let currentUser = null;
 let cart = [];
 let allProducts = [];
 
+// Discount Configuration
+window.DISCOUNT_NORMAL_PERCENT = 5;
+window.DISCOUNT_MAX_PERCENT = 7;
+window.currentAppliedDiscount = 0;
+let currentDiscountType = 'none'; // 'none', 'normal', 'max', 'custom'
+
+function editDiscountPresets() {
+    const normal = prompt("Enter Normal Discount %", window.DISCOUNT_NORMAL_PERCENT);
+    if(normal !== null) window.DISCOUNT_NORMAL_PERCENT = parseFloat(normal) || 0;
+    const max = prompt("Enter Maximum Discount %", window.DISCOUNT_MAX_PERCENT);
+    if(max !== null) window.DISCOUNT_MAX_PERCENT = parseFloat(max) || 0;
+    
+    document.getElementById('btn-discount-normal').innerText = window.DISCOUNT_NORMAL_PERCENT + '%';
+    document.getElementById('btn-discount-max').innerText = window.DISCOUNT_MAX_PERCENT + '%';
+    renderCart();
+}
+
+function applyPresetDiscount(type) {
+    currentDiscountType = type;
+    const discountInput = document.getElementById('cart-discount');
+    if (type !== 'custom' && discountInput) discountInput.value = '';
+    renderCart();
+}
+
 // Login
 async function login() {
     const username = document.getElementById('username').value;
@@ -217,9 +241,9 @@ function removeFromCart(id) {
 function renderCart() {
     const container = document.getElementById('cart-items');
     container.innerHTML = '';
-    let total = 0;
+    let subtotal = 0;
     cart.forEach(item => {
-        total += item.price * item.quantity;
+        subtotal += item.price * item.quantity;
         const div = document.createElement('div');
         div.className = 'cart-item';
         div.innerHTML = `
@@ -229,6 +253,28 @@ function renderCart() {
         `;
         container.appendChild(div);
     });
+    
+    let calculatedDiscount = 0;
+    const discountInput = document.getElementById('cart-discount');
+    
+    // Auto switch to custom if user types in the input
+    if (document.activeElement === discountInput && discountInput.value !== '') {
+        currentDiscountType = 'custom';
+    }
+
+    if (currentDiscountType === 'normal') {
+        calculatedDiscount = subtotal * (window.DISCOUNT_NORMAL_PERCENT / 100);
+    } else if (currentDiscountType === 'max') {
+        calculatedDiscount = subtotal * (window.DISCOUNT_MAX_PERCENT / 100);
+    } else if (currentDiscountType === 'custom') {
+        calculatedDiscount = parseFloat(discountInput.value) || 0;
+    }
+
+    calculatedDiscount = Math.round(calculatedDiscount);
+    window.currentAppliedDiscount = calculatedDiscount;
+    
+    const total = Math.max(0, subtotal - calculatedDiscount);
+    
     document.getElementById('cart-total').innerText = total;
 }
 
@@ -236,24 +282,35 @@ async function processSale() {
     if (cart.length === 0) return alert('Cart is empty');
 
     const items = cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price }));
+    
+    const discount = window.currentAppliedDiscount || 0;
 
     const res = await fetch(`${API_URL}/sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cashier_id: currentUser.id, items })
+        body: JSON.stringify({ cashier_id: currentUser.id, items, discount })
     });
 
     if (res.ok) {
         const data = await res.json();
         if (confirm('Sale Recorded! Print Receipt?')) {
-            printReceipt(data.sale_id, items, currentUser.username);
+            printReceipt(data.sale_id, items, currentUser.username, discount);
         }
         cart = [];
+        const discountInput = document.getElementById('cart-discount');
+        if (discountInput) discountInput.value = '';
+        currentDiscountType = 'none';
         renderCart();
         loadProducts(); // Update stock
     } else {
         alert('Error processing sale');
     }
+}
+
+function printCurrentBill() {
+    if (cart.length === 0) return alert("Cart is empty");
+    const items = cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price }));
+    printReceipt('PENDING', items, currentUser.username, window.currentAppliedDiscount || 0);
 }
 
 // Reports
@@ -306,10 +363,10 @@ function exportReport() {
 async function clearDailyReport() {
     if (!confirm('Are you sure you want to CLEAR today\'s sales? This cannot be undone.')) return;
 
-    // Double confirmation for security
-    const password = prompt("Enter Owner Password to confirm:");
-    // In a real app, verify this on backend. For simple request, simple check:
-    if (password !== 'admin123') return alert('Incorrect password');
+    // Double confirmation for security checking owner role
+    if (currentUser.role !== 'owner') return alert('Only owners can clear sales');
+    const confirmName = prompt("Type 'CLEAR' to confirm deletion:");
+    if (confirmName !== 'CLEAR') return alert('Action cancelled');
 
     try {
         const res = await fetch(`${API_URL}/reports/daily`, { method: 'DELETE' });
@@ -353,7 +410,7 @@ async function loadMonthlyReport() {
     }
 }
 
-function printReceipt(saleId, items, cashierName) {
+function printReceipt(saleId, items, cashierName, discount = 0) {
     const date = new Date().toLocaleString();
     document.getElementById('receipt-date').innerText = date;
     document.getElementById('receipt-id').innerText = saleId;
@@ -361,12 +418,12 @@ function printReceipt(saleId, items, cashierName) {
     const tbody = document.getElementById('receipt-items');
     tbody.innerHTML = '';
 
-    let total = 0;
+    let subtotal = 0;
     items.forEach(item => {
         const product = allProducts.find(p => p.id === item.product_id);
         const name = product ? product.name : 'Unknown';
         const lineTotal = item.quantity * item.price;
-        total += lineTotal;
+        subtotal += lineTotal;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -376,7 +433,10 @@ function printReceipt(saleId, items, cashierName) {
         `;
         tbody.appendChild(tr);
     });
+    
+    const total = Math.max(0, subtotal - discount);
 
+    document.getElementById('receipt-discount').innerText = discount;
     document.getElementById('receipt-total').innerText = total;
 
     window.print();
