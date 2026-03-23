@@ -87,16 +87,18 @@ app.delete('/api/products/:id', (req, res) => {
 
 // Sales API
 app.post('/api/sales', (req, res) => {
-    const { cashier_id, items } = req.body; // items: [{product_id, quantity, price}]
+    const { cashier_id, items, discount = 0 } = req.body; // items: [{product_id, quantity, price}]
     const date = new Date().toISOString().split('T')[0];
 
-    let total_amount = 0;
-    items.forEach(item => total_amount += (item.quantity * item.price));
+    let subtotal = 0;
+    items.forEach(item => subtotal += (item.quantity * item.price));
+    
+    const total_amount = Math.max(0, subtotal - discount);
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
 
-        db.run("INSERT INTO sales (date, total_amount, cashier_id) VALUES (?, ?, ?)", [date, total_amount, cashier_id], function (err) {
+        db.run("INSERT INTO sales (date, total_amount, discount, cashier_id) VALUES (?, ?, ?, ?)", [date, total_amount, discount, cashier_id], function (err) {
             if (err) {
                 db.run("ROLLBACK");
                 res.status(500).json({ error: "Sale failed" });
