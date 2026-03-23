@@ -49,8 +49,20 @@
                     <h2>Current Bill</h2>
                     <div id="cart-items"></div>
                     <div class="total-section">
+                        <div class="discount-container" style="display: flex; flex-direction: column; margin-bottom: 10px;">
+                            <label><strong>Discount:</strong> <span style="font-size:12px; cursor:pointer; color:blue;" onclick="editDiscountPresets()">[Edit %]</span></label>
+                            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                                <button class="primary-btn" style="padding: 5px 10px; width: auto;" onclick="applyPresetDiscount('none')">None</button>
+                                <button class="primary-btn" id="btn-discount-normal" style="padding: 5px 10px; width: auto;" onclick="applyPresetDiscount('normal')">5%</button>
+                                <button class="primary-btn" id="btn-discount-max" style="padding: 5px 10px; width: auto;" onclick="applyPresetDiscount('max')">7%</button>
+                                <input type="number" id="cart-discount" placeholder="Custom ₹" min="0" oninput="renderCart()" style="width: 80px; padding: 5px;">
+                            </div>
+                        </div>
                         <h3>Total: ₹<span id="cart-total">0</span></h3>
-                        <button class="primary-btn" onclick="processSale()">Checkout</button>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="primary-btn" onclick="printCurrentBill()">Print Bill</button>
+                            <button class="primary-btn" style="background-color: #28a745;" onclick="processSale()">Checkout</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -161,7 +173,8 @@
             <tbody id="receipt-items"></tbody>
         </table>
         <hr>
-        <h3 style="text-align: right;">Total: ₹<span id="receipt-total">0</span></h3>
+        <p style="text-align: right; margin: 5px 0;">Discount: ₹<span id="receipt-discount">0</span></p>
+        <h3 style="text-align: right; margin: 5px 0;">Total: ₹<span id="receipt-total">0</span></h3>
         <center>Thank you for shopping!</center>
     </div>
 
